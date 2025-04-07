@@ -10,12 +10,12 @@ namespace KoenZomers.Tado.Api.UnitTest
         /// <summary>
         /// Username to use to connect to the Tado API
         /// </summary>
-        public static string Username => ConfigurationManager.AppSettings["TadoUsername"];
+        public static string DeviceCode => ConfigurationManager.AppSettings["TadoDeviceCode"];
 
         /// <summary>
         /// Password to use to connect to the Tado API
         /// </summary>
-        public static string Password => ConfigurationManager.AppSettings["TadoPassword"];
+        public static string AccessToken => ConfigurationManager.AppSettings["TadoAccessToken"];
 
         /// <summary>
         /// Id of the home as registered with Tado

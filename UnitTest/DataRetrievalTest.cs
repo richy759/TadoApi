@@ -22,7 +22,7 @@ namespace KoenZomers.Tado.Api.UnitTest
         [ClassInitialize]
         public static async Task ClassInitialize(TestContext testContext) 
         {
-            session = new Session(Username, Password);
+            session = new Session(DeviceCode, AccessToken);
             await session.Authenticate();
         }
 

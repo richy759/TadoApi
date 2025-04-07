@@ -15,12 +15,16 @@ namespace KoenZomers.Tado.Api
         /// <summary>
         /// Username to use to connect to the Tado API. Set by providing it in the constructor.
         /// </summary>
-        public string Username { get; private set; }
+        public string DeviceCode { get; private set; }
 
         /// <summary>
         /// Password to use to connect to the Tado API. Set by providing it in the constructor.
         /// </summary>
-        public string Password { get; private set; }
+        public string AccessToken { get; private set; }
+
+        public string RefreshToken { get; private set; }
+
+        //public string RefreshToken { get; private set; }
 
         /// <summary>
         /// Base Uri with which all Tado API requests start
@@ -30,12 +34,14 @@ namespace KoenZomers.Tado.Api
         /// <summary>
         /// Tado API Uri to authenticate against
         /// </summary>
-        public Uri TadoApiAuthUrl => new Uri("https://auth.tado.com/oauth/token");
+        public Uri TadoApiAuthUrl => new Uri("https://login.tado.com/oauth2/device_authorize");
+
+        public Uri TadoApiTokenUrl => new Uri("https://login.tado.com/oauth2/token");
 
         /// <summary>
         /// Tado API Client Id to use for the OAuth token
         /// </summary>
-        public string ClientId => "public-api-preview";
+        public string ClientId => "1bb50063-6b0c-4d11-bd99-387f4a91cc46";
 
         /// <summary>
         /// Tado API Client Secret to use for the OAuth token
@@ -93,10 +99,11 @@ namespace KoenZomers.Tado.Api
         /// <summary>
         /// Initiates a new session to the Tado API
         /// </summary>
-        public Session(string username, string password)
+        public Session(string deviceCode, string accessToken, string refreshToken)
         {
-            Username = username;
-            Password = password;
+            DeviceCode = deviceCode;
+            AccessToken = accessToken;
+            RefreshToken = refreshToken;
 
             // Add a HttpClient to the session to allow for network communication
             _httpClient = CreateHttpClient();
@@ -133,12 +140,13 @@ namespace KoenZomers.Tado.Api
                 if (!string.IsNullOrEmpty(AuthenticatedSession.RefreshToken))
                 {
                     // We have a refresh token, use that to get a new access token
-                    AuthenticatedSession = await GetRefreshedSession();
+                    AuthenticatedSession = await GetRefreshedSession(AuthenticatedSession.RefreshToken);
                 }
                 else
                 {
                     // We don't have a refresh token, just get a new access token
-                    AuthenticatedSession = await GetNewSession();
+                    //AuthenticatedSession = await GetNewSession();
+                    throw new InvalidOperationException();
                 }
             }
 
@@ -157,50 +165,120 @@ namespace KoenZomers.Tado.Api
             }
         }
 
-        /// <summary>
-        /// Sets up a new session with the Tado API
-        /// </summary>
-        /// <returns>Session instance</returns>
-        private async Task<Entities.Session> GetNewSession()
+        public async Task<Entities.DeviceAuthResponse> GetNewDeviceAuth()
         {
             // Build the POST body with the authentication arguments
             var queryBuilder = new Helpers.QueryStringBuilder();
             queryBuilder.Add("client_id", ClientId);
-            queryBuilder.Add("grant_type", "password");
-            queryBuilder.Add("client_secret", ClientSecret);
-            queryBuilder.Add("password", Password);
-            queryBuilder.Add("scope", "home.user");
-            queryBuilder.Add("username", Username);
+            queryBuilder.Add("scope", "offline_access");
+            var authResponse = await PostMessageGetResponse<Entities.DeviceAuthResponse>(TadoApiAuthUrl, queryBuilder, false);
+            DeviceCode = authResponse.DeviceCode;
 
-            return await PostMessageGetResponse<Entities.Session>(TadoApiAuthUrl, queryBuilder, false);
+            return authResponse;
+        }
+
+        public async Task<Entities.Session> TryNewSession()
+        {
+            // Build the POST body with the authentication arguments
+            var queryBuilder = new Helpers.QueryStringBuilder();
+            queryBuilder.Add("client_id", ClientId);
+            queryBuilder.Add("device_code", DeviceCode);
+            queryBuilder.Add("grant_type", "urn:ietf:params:oauth:grant-type:device_code");
+            var tokenResponse = await PostMessageGetResponse<Entities.TokenResponse>(TadoApiTokenUrl, queryBuilder, false);
+
+            this.AccessToken = tokenResponse.AccessToken;
+
+            var session = new Entities.Session();
+
+            session.AccessToken = tokenResponse.AccessToken;
+            session.RefreshToken = tokenResponse.RefreshToken;
+            session.Scope = tokenResponse.Scope;
+            session.TokenType = tokenResponse.TokenType;
+            session.ExpiresIn = tokenResponse.ExpiresIn;
+            //session.Expires = 
+
+            return session;
+        }
+
+        /// <summary>
+        /// Sets up a new session with the Tado API
+        /// </summary>
+        /// <returns>Session instance</returns>
+        private async Task<Entities.Session> GetNewSession(string refreshToken)
+        {
+
+            return await GetRefreshedSession(refreshToken);
+            //if (string.IsNullOrEmpty(DeviceCode) ||string.IsNullOrEmpty(AccessToken))
+            //{
+            //    // Build the POST body with the authentication arguments
+            //    var queryBuilder = new Helpers.QueryStringBuilder();
+            //    queryBuilder.Add("client_id", ClientId);
+            //    queryBuilder.Add("scope", "offline_access");
+            //    var authResponse = await PostMessageGetResponse<Entities.DeviceAuthResponse>(TadoApiAuthUrl, queryBuilder, false);
+            //    DeviceCode = authResponse.DeviceCode;
+            //}
+
+            //{
+            //    // Build the POST body with the authentication arguments
+            //    var queryBuilder = new Helpers.QueryStringBuilder();
+            //    queryBuilder.Add("client_id", ClientId);
+            //    queryBuilder.Add("device_code", DeviceCode);
+            //    queryBuilder.Add("grant_type", "urn:ietf:params:oauth:grant-type:device_code");
+            //    var tokenResponse = await PostMessageGetResponse<Entities.TokenResponse>(TadoApiTokenUrl, queryBuilder, false);
+
+            //    this.AccessToken = tokenResponse.AccessToken;
+
+            //    var session = new Entities.Session();
+
+            //    session.AccessToken = tokenResponse.AccessToken;
+            //    session.RefreshToken = tokenResponse.RefreshToken;
+            //    session.Scope = tokenResponse.Scope;
+            //    session.TokenType = tokenResponse.TokenType;
+            //    session.ExpiresIn = tokenResponse.ExpiresIn;
+            //    //session.Expires = 
+
+            //    return session;
+            //}
+
+            //// Build the POST body with the authentication arguments
+            //var queryBuilder = new Helpers.QueryStringBuilder();
+            //queryBuilder.Add("client_id", ClientId);
+            ////queryBuilder.Add("grant_type", "password");
+            ////queryBuilder.Add("client_secret", ClientSecret);
+            ////queryBuilder.Add("password", Password);
+            //queryBuilder.Add("scope", "offline_access");
+            ////queryBuilder.Add("username", Username);
+
+            //return await PostMessageGetResponse<Entities.Session>(TadoApiAuthUrl, queryBuilder, false);
+
         }
 
         /// <summary>
         /// Sets up a session with the Tado API based on the refresh token
         /// </summary>
         /// <returns>Session instance</returns>
-        private async Task<Entities.Session> GetRefreshedSession()
+        private async Task<Entities.Session> GetRefreshedSession(string refreshToken)
         {
             // Build the POST body with the authentication arguments
             var queryBuilder = new Helpers.QueryStringBuilder();
             queryBuilder.Add("client_id", ClientId);
             queryBuilder.Add("grant_type", "refresh_token");
-            queryBuilder.Add("client_secret", ClientSecret);
-            queryBuilder.Add("refresh_token", AuthenticatedSession.RefreshToken);
-            queryBuilder.Add("scope", "home.user");
+            //queryBuilder.Add("client_secret", ClientSecret);
+            queryBuilder.Add("refresh_token", refreshToken);
+            //queryBuilder.Add("scope", "home.user");
 
-            return await PostMessageGetResponse<Entities.Session>(TadoApiAuthUrl, queryBuilder, false);
+            return await PostMessageGetResponse<Entities.Session>(TadoApiTokenUrl, queryBuilder, false);
         }
 
         /// <summary>
         /// Authenticates this session with the Tado API
         /// </summary>
-        public async Task Authenticate()
+        public async Task Authenticate(string refreshToken)
         {
             try
             {
                 // Request the OAuth token
-                AuthenticatedSession = await GetNewSession();
+                AuthenticatedSession = await GetNewSession(refreshToken);
             }
             catch (Exception ex)
             {
