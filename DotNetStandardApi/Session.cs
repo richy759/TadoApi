@@ -20,9 +20,9 @@ namespace KoenZomers.Tado.Api
         /// <summary>
         /// Password to use to connect to the Tado API. Set by providing it in the constructor.
         /// </summary>
-        public string AccessToken { get; private set; }
+        //public string AccessToken { get; private set; }
 
-        public string RefreshToken { get; private set; }
+        //public string RefreshToken { get; private set; }
 
         //public string RefreshToken { get; private set; }
 
@@ -102,8 +102,8 @@ namespace KoenZomers.Tado.Api
         public Session(string deviceCode, string accessToken, string refreshToken)
         {
             DeviceCode = deviceCode;
-            AccessToken = accessToken;
-            RefreshToken = refreshToken;
+            //AccessToken = accessToken;
+            //RefreshToken = refreshToken;
 
             // Add a HttpClient to the session to allow for network communication
             _httpClient = CreateHttpClient();
@@ -184,20 +184,21 @@ namespace KoenZomers.Tado.Api
             queryBuilder.Add("client_id", ClientId);
             queryBuilder.Add("device_code", DeviceCode);
             queryBuilder.Add("grant_type", "urn:ietf:params:oauth:grant-type:device_code");
-            var tokenResponse = await PostMessageGetResponse<Entities.TokenResponse>(TadoApiTokenUrl, queryBuilder, false);
 
-            this.AccessToken = tokenResponse.AccessToken;
+            AuthenticatedSession = await PostMessageGetResponse<Entities.Session>(TadoApiTokenUrl, queryBuilder, false);
 
-            var session = new Entities.Session();
+            //this.AccessToken = tokenResponse.AccessToken;
 
-            session.AccessToken = tokenResponse.AccessToken;
-            session.RefreshToken = tokenResponse.RefreshToken;
-            session.Scope = tokenResponse.Scope;
-            session.TokenType = tokenResponse.TokenType;
-            session.ExpiresIn = tokenResponse.ExpiresIn;
+            //var session = new Entities.Session();
+
+            //session.AccessToken = tokenResponse.AccessToken;
+            //session.RefreshToken = tokenResponse.RefreshToken;
+            //session.Scope = tokenResponse.Scope;
+            //session.TokenType = tokenResponse.TokenType;
+            //session.ExpiresIn = tokenResponse.ExpiresIn;
             //session.Expires = 
 
-            return session;
+            return AuthenticatedSession;
         }
 
         /// <summary>
