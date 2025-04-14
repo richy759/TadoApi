@@ -139,6 +139,7 @@ namespace KoenZomers.Tado.Api
                 // Access token is no longer valid, request a new one
                 if (!string.IsNullOrEmpty(AuthenticatedSession.RefreshToken))
                 {
+                    _httpClient.DefaultRequestHeaders.Authorization = null;
                     // We have a refresh token, use that to get a new access token
                     AuthenticatedSession = await GetRefreshedSession(AuthenticatedSession.RefreshToken);
                 }
@@ -368,6 +369,10 @@ namespace KoenZomers.Tado.Api
                             // Request was successful
                             var responseEntity = JsonConvert.DeserializeObject<T>(responseBody);
                             return responseEntity;
+                        }
+                        else
+                        {
+                            int breakpl = 0;
                         }
                     }
                     catch(Exception ex)
