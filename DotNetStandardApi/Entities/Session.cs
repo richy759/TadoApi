@@ -19,7 +19,7 @@ namespace KoenZomers.Tado.Api.Entities
             set
             {
                 expiresIn = value;
-                Expires = value.HasValue ? (DateTime?) DateTime.Now.AddSeconds(value.Value) : null;
+                Expires = value.HasValue ? (DateTime?) DateTime.Now.AddSeconds(value.Value/3) : null;
             }
         }
 

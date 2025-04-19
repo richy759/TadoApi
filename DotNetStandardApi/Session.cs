@@ -370,10 +370,6 @@ namespace KoenZomers.Tado.Api
                             var responseEntity = JsonConvert.DeserializeObject<T>(responseBody);
                             return responseEntity;
                         }
-                        else
-                        {
-                            int breakpl = 0;
-                        }
                     }
                     catch(Exception ex)
                     {
